@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+    <style type="text/css">
+        .resize {
+            width: 7px;
+            height: 7px;
+            background-color: #ddd;
+            border: 1px solid #000;
+            /*top: -5px;*/
+            bottom: -5px;
+            right: -5px;
+            position: absolute;
+            /*cursor: ne-resize;*/
+            cursor: nw-resize;
+        }
+
+        #mainContainer {
+            border: 10px solid #990000;
+            width: 600px;
+            height: 300px;
+        }
+
+        #innerContainer {
+            width: 100%;
+            height: 100%;
+        }
+
+        #Drag {
+            /*border: 5px solid #C4E3FD;*/
+            background: #C4E3FD;
+            width: 50px;
+            height: 50px;
+            top: 50px;
+            left: 50px;
+            z-index: 2;
+        }
+
+        #Drag2 {
+            /*border: 5px solid #C4E3FD;*/
+            background: #ff0000;
+            width: 80px;
+            height: 80px;
+            top: 50px;
+            left: 50px;
+            z-index: 3;
+            /*background: url(http://pic.cnitblog.com/face/614265/20140725231849.png) no-repeat;*/
+        }
+    </style>
+
+    <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"></script>
+</head>
+<body>
+
+<div id="mainContainer">
+    <div id="innerContainer">
+    </div>
+</div>
+
+<br />拖放状态：<span id="idShow">未开始</span>
+<br /><span id="testShow"></span>
+<div>
+    <img src="http://pic.sc.chinaz.com/files/pic/pic9/201711/bpic4117.jpg" onclick="addElement(this)" />
+</div>
+
+</body>
+
+<script type="text/javascript">
+    //禁止鼠标选中。
+    document.onselectstart = new Function("event.returnValue=false;");
+
+    var containerId = "innerContainer";
+    var showId = "idShow";
+    var moveElement = "div";
+
+    //是否元素移动。
+    var isMouseMove = false;
+
+    //是否元素缩放。
+    var isMouseZoom = false;
+
+    var productLists = $("#products");
+
+    //获得容器坐标。
+    var setContainer = findPosition(document.getElementById(containerId));
+
+    // $("#ContainerWidth").attr("value", setContainer[4]);
+    // $("#ContainerHeight").attr("value", setContainer[5]);
+
+    function addElement(obj) {
+        var container = findPosition(document.getElementById(containerId));
+        var containerLeft = container[0];
+        var containerTop = container[1];
+        var containerWidth = container[4];
+        var containerHeight = container[5];
+
+        //设置默认宽度与高度。
+        var width = 50;
+        // var height = width * (1 / (obj.offsetWidth / obj.offsetHeight));
+        var height = 30;
+
+        var left = containerLeft + containerWidth / 2 - width / 2;
+        var top = containerTop + containerHeight / 2 - height / 2;
+
+        var style = "width:" + width + "px;height:" + height + "px; left:" + left + "px;top:" + top + "px; position:absolute;background: #ff0000;";
+        var rightSize = "<div class='resize' onmousedown='zoomBind(this, event)'></div>";
+        $("#" + containerId).append("<div onmousedown='moveBind(this, event)' onmousemove=\"this.style.cursor='move'\" style='" + style + "'>" + rightSize + "<input type=\"text\" value=\"\"></div>");
+
+    }
+
+    /****************************以下是元素缩放*******************************/
+
+    function zoomBind(obj, evnt) {
+        console.log(111111111111)
+        isMouseZoom = true;
+
+        //获得容器最大宽度。
+        var container = findPosition(document.getElementById(containerId));
+        var maxWidth = container[2];
+        var maxHeight = container[3];
+
+        //设置最小宽度。
+        var minWidth = 50;
+        var minHeight = 30;
+
+        //获得元素对象。
+        var parent = obj.parentNode;
+
+        //获得当前鼠标位置。
+        var mouseX = evnt.clientX;
+        var mouseY = evnt.clientY;
+
+        //获得元素的宽与高。
+        var parentSize = findPosition(parent);
+        var parentWidth = parentSize[4];
+        var parentHeight = parentSize[5];
+
+        parent.onmousedown = function () { }
+        document.onmousemove = function (doc) {
+            if (isMouseZoom) {
+                //设置成绝对定位，让元素可以移动。
+                parent.style.position = "absolute";
+
+                //获得鼠标移动后的坐标。
+                var currentMouseX = doc.clientX;
+                var currentMouseY = doc.clientY;
+                console.log(currentMouseX)
+                console.log(currentMouseY)
+                console.log('---')
+
+                // //计算出移动后的坐标。
+                var moveWidth = currentMouseX - mouseX;
+                var moveHeight = currentMouseY - mouseY;
+
+                //计算宽度增加或减少的值，增加的量等于鼠标移位的量。
+                var width = parent.offsetWidth + moveWidth;
+                var height = parent.offsetHeight + moveHeight;
+
+                if (maxWidth > currentMouseX) {
+                    if (width > minWidth) {
+                        //以元素左下角为定点，则左下角的 Y 坐标 = 当前元素的左上角的 Y 坐标 - （改变后的高度 - 改变前的高度）
+                        parent.style.width = width + "px";
+                        mouseX = currentMouseX;
+                        parentWidth = parent.offsetWidth;
+                    }
+                }
+                if (maxHeight > currentMouseY) {
+                    if (height > minHeight) {
+                        parent.style.height = height + "px";
+                        mouseY = currentMouseY;
+                        parentHeight = parent.offsetHeight;
+                    }
+                }
+            }
+        }
+
+        document.onmouseup = function () {
+            // 缩放的抬起释放
+            isMouseZoom = false;
+            // 清除缩放
+            document.onmousemove = function () { }
+            // 绑定移动
+            parent.onmousedown = function (e) {
+                moveBind(parent, e);
+            }
+        };
+    }
+
+    /****************************以上是元素缩放*******************************/
+
+    /****************************以下是元素拖动*******************************/
+    //绑定移动事件。
+    function moveBind(obj, evnt) {
+        isMouseMove = true;
+
+        //获得元素坐标。
+        var left = obj.offsetLeft;
+        var top = obj.offsetTop;
+        var width = obj.offsetWidth;
+        var height = obj.offsetHeight;
+
+        //计算出鼠标的位置与元素位置的差值。
+        var cleft = evnt.clientX - left;
+        var ctop = evnt.clientY - top;
+
+        //获得容器坐标。
+        var container = findPosition(document.getElementById(containerId));
+        var containerLeft = container[0];
+        var containerTop = container[1];
+        var containerWidth = container[4];
+        var containerHeight = container[5];
+
+        /*计算出容器的范围坐标。*/
+
+        //开始 X 坐标。
+        var startX = containerLeft;
+        //开始 Y 坐标。
+        var startY = containerTop;
+        //结束 X 坐标。
+        var maxX = startX + containerWidth - width;
+        //结束 Y 坐标。
+        var maxY = startY + containerHeight - height;
+
+        //鼠标选中的元素设置成顶层。
+        obj.style.zIndex = getMaxIndex() + 1;
+
+        //输出显示。
+        //show("idShow", startX, startY);
+        document.onmousemove = function () { }
+        document.onmousemove = function (doc) {
+
+            if (isMouseMove) {
+                //计算出移动后的坐标。
+                var moveLeft = doc.clientX - cleft;
+                var moveTop = doc.clientY - ctop;
+
+                //设置成绝对定位，让元素可以移动。
+                obj.style.position = "absolute";
+
+                //不可以超出指定的范围。
+                if (moveLeft >= startX && moveTop >= startY && moveLeft <= maxX && moveTop <= maxY) {
+                    //当移动位置在范围内时，元素跟随鼠标移动。
+                    obj.style.left = moveLeft + "px";
+                    obj.style.top = moveTop + "px";
+                } else {
+                    /****************以下为处理当鼠标的位置不在范围内里，鼠标的移动，里面的元素也要跟着移动*****************/
+                    //向右移动时，如果移动坐标没有大于最大 X 坐标，则移动，否则设置成最大 X 坐标的值。
+                    if (moveLeft >= startX && moveLeft <= maxX) {
+                        obj.style.left = moveLeft + "px";
+                    } else if (moveLeft > maxX) {
+                        obj.style.left = maxX + "px";
+                    } else if (moveLeft < startX) {
+                        obj.style.left = startX + "px";
+                    }
+
+                    //向下移动时，如果移动坐标没有大于最大 Y 坐标，则移动，否则设置成最大 Y 坐标的值。
+                    if (moveTop >= startY && moveTop <= maxY) {
+                        obj.style.top = moveTop + "px";
+                    } else if (moveTop > maxY) {
+                        obj.style.top = maxY + "px";
+                    } else if (moveTop < startY) {
+                        obj.style.top = startY + "px";
+                    }
+                }
+
+                var objX = obj.offsetLeft - startX;
+                var objY = obj.offsetTop - startY;
+
+                var inputValue = obj.getElementsByTagName("input")[0];
+
+                inputValue.value = objX + "," + objY + "," + width + "," + height;
+
+                show(showId, moveLeft, moveTop);
+            }
+        }
+
+        document.onmouseup = function () {
+            isMouseMove = false;
+            document.onmousemove = function () { }
+        };
+    }
+
+    //获得元素的坐标与大小。
+    function findPosition(oElement) {
+        var x2 = 0;
+        var y2 = 0;
+        var width = oElement.clientWidth;
+        var height = oElement.clientHeight;
+        //alert(width + "=" + height);
+        if (typeof (oElement.offsetParent) != 'undefined') {
+            for (var posX = 0, posY = 0; oElement; oElement = oElement.offsetParent) {
+                posX += oElement.offsetLeft;
+                posY += oElement.offsetTop;
+            }
+            x2 = posX + width;
+            y2 = posY + height;
+            return [posX, posY, x2, y2, width, height];
+
+        } else {
+            x2 = oElement.x + width;
+            y2 = oElement.y + height;
+            // 右上角的x，y，右下角的x，y
+            return [oElement.x, oElement.y, x2, y2, width, height];
+        }
+    }
+
+    //获得最大 Z 坐标。
+    function getMaxIndex() {
+        var index = 0;
+        var ds = document.getElementById(containerId).getElementsByTagName(moveElement);
+        var length = document.getElementById(containerId).getElementsByTagName(moveElement).length;
+
+        for (var loop = 0; loop < length; loop++) {
+            if (ds[loop].style.zIndex > index) index = ds[loop].style.zIndex;
+        }
+
+        return parseInt(index);
+    }
+
+    //显示坐标信息。
+    function show(id, x, y) {
+        document.getElementById(id).innerHTML = "left：" + x + "；top:" + y;
+    }
+</script>
+</html>
